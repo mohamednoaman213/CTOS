@@ -8,20 +8,33 @@ using CTOS.Web.Entities;
 namespace CTOS.Web.Entities {
     public class Event {
 
-        public int Id { get; set; } // Database Id
+        // Primary Key (Database)
+        public int Id { get; set; }
 
-        public string EventId { get; set; } // UI Id
+        // Public ID (shown to user)
+        public string EventId { get; set; } = null!;
 
-        public string EventName { get; set; }
+        public string EventName { get; set; } = null!;
 
-        public string Location { get; set; }
+        public string Description { get; set; } = null!;
 
-        public string Priority { get; set; }
+        public string Location { get; set; } = null!;
 
-        public string Description { get; set; }
+        // Police / Fire / Hospital / Infrastructure
+        public string Category { get; set; } = null!;
 
+        // High / Mid / Low (AI decides)
+        public string Priority { get; set; } = null!;
+
+        // UnderProcessing / Resolved / NotResolved
+        public string Status { get; set; } = "UnderProcessing";
+
+        #region Relation with User
+        //public int UserId { get; set; }
+        //public User User { get; set; } = null!;
+        #endregion
+        // Meta
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
 
     }
     #region Navigational properties and relationships
@@ -41,9 +54,4 @@ namespace CTOS.Web.Entities {
 
 }
 
-
-
-//var eve = new Event();
-
-//eve.location.address
 
