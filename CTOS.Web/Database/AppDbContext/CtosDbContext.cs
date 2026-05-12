@@ -27,7 +27,7 @@ namespace CTOS.Web.Database.AppDbContext {
         // Create Table (DbSet) for each Entity
         public DbSet<Event> Events { get; set; }
 
-
+        public DbSet<User> Users { get; set; }
         //public DbSet<Location> Locations { get; set; }
     }
 }

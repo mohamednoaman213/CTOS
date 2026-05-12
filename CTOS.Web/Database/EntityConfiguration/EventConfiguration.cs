@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CTOS.Web.Database.EntityConfiguration {
-    public class EventConfiguration : IEntityTypeConfiguration<Event> {
+    public class aEventConfiguration : IEntityTypeConfiguration<Event> {
         public void Configure(EntityTypeBuilder<Event> builder) {
 
             //  Primary Key

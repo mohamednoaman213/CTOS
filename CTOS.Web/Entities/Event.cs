@@ -30,8 +30,8 @@ namespace CTOS.Web.Entities {
         public string Status { get; set; } = "UnderProcessing";
 
         #region Relation with User
-        //public int UserId { get; set; }
-        //public User User { get; set; } = null!;
+        public int UserId { get; set; }
+        public User User { get; set; } = null!;
         #endregion
         // Meta
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

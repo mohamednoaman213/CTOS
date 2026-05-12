@@ -16,4 +16,12 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\ctos-new\CTOS.Web\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\ctos-new\CTOS.Web\.editorconfig" />
+  </ItemGroup>
+
 </Project>
