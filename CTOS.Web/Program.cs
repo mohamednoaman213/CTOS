@@ -24,7 +24,8 @@ namespace CTOS.Web
 
             builder.Services.AddScoped<EventRepo>();
             builder.Services.AddScoped<EventService>();
-
+            builder.Services.AddScoped<UserRepo>();
+            builder.Services.AddScoped<UserService>();
 
             #endregion
 
