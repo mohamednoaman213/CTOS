@@ -17,7 +17,7 @@ namespace CTOS.Web.Repositroies {
 
             return await context.Set<Event>().FindAsync(id);
         }
-
+       
         public async Task<IEnumerable<Event>> GetAllAsync() {
 
             return await context.Set<Event>().ToListAsync();

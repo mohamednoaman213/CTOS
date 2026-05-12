@@ -11,7 +11,11 @@ namespace CTOS.Web.Repositroies
 
             return await context.Set<User>().FindAsync(id);
         }
-
+        public async Task<User?> GetByEmailAsync(string email)
+        {
+            return await context.Set<User>()
+                .FirstOrDefaultAsync(u => u.Email == email);
+        }
         public async Task<IEnumerable<User>> GetAllAsync()
         {
 
