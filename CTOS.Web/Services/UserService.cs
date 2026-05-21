@@ -7,32 +7,50 @@ namespace CTOS.Web.Services
 {
     public class UserService (UserRepo userRepo)
     {
-        //  Register
+        //  Register Citizen
         // ────────────────────────────────────────────
-        public async Task<int> RegisterAsync(User user)
+        public async Task<int> RegisterCitizenAsync(Citizen citizen)
         {
-            user.Id = 0;
-            user.UserId = Guid.NewGuid().ToString();
-            user.PasswordHash = HashPassword(user.PasswordHash);
-            user.CreatedAt = DateTime.UtcNow;
-            user.IsVerified = false;
-            user.IsDeleted = false;
+            citizen.Id = 0;
+            citizen.UserId = Guid.NewGuid().ToString();
+            citizen.PasswordHash = HashPassword(citizen.PasswordHash);
+            citizen.CreatedAt = DateTime.UtcNow;
+            citizen.IsVerified = false;
+            citizen.IsDeleted = false;
+            citizen.AiScore = 0;
+            citizen.AiSensitivityLevel = 1;
 
-            await userRepo.AddAsync(user);
+            await userRepo.AddAsync(citizen);
             await userRepo.SaveChangesAsync();
-            return user.Id;
+            return citizen.Id;
         }
 
         // ────────────────────────────────────────────
-        //  Login
+        //  Register Official
+        // ────────────────────────────────────────────
+        public async Task<int> RegisterOfficialAsync(Official official)
+        {
+            official.Id = 0;
+            official.UserId = Guid.NewGuid().ToString();
+            official.PasswordHash = HashPassword(official.PasswordHash);
+            official.CreatedAt = DateTime.UtcNow;
+            official.IsVerified = false;
+            official.IsDeleted = false;
+            official.Rating = 0;
+
+            await userRepo.AddAsync(official);
+            await userRepo.SaveChangesAsync();
+            return official.Id;
+        }
+
+        // ────────────────────────────────────────────
+        //  Login (Citizen & Official)
         // ────────────────────────────────────────────
         public async Task<User?> LoginAsync(string email, string password)
         {
             var user = await userRepo.GetByEmailAsync(email);
             if (user is null || user.IsDeleted) return null;
-
             if (user.PasswordHash != HashPassword(password)) return null;
-
             return user;
         }
 
@@ -47,27 +65,59 @@ namespace CTOS.Web.Services
         }
 
         // ────────────────────────────────────────────
-        //  Update Profile
+        //  Update Citizen
         // ────────────────────────────────────────────
-        public async Task<int> UpdateProfileAsync(int id, User sentUser)
+        public async Task<int> UpdateCitizenAsync(int id, Citizen sentData)
         {
-            if (id <= 0) return 0;
+            var user = await userRepo.GetByIdAsync(id);
+            if (user is not Citizen citizen || citizen.IsDeleted) return 0;
 
-            var existingUser = await userRepo.GetByIdAsync(id);
-            if (existingUser is null || existingUser.IsDeleted) return 0;
+            if (!string.IsNullOrEmpty(sentData.FullName))
+                citizen.FullName = sentData.FullName;
+            if (!string.IsNullOrEmpty(sentData.Email))
+                citizen.Email = sentData.Email;
+            if (!string.IsNullOrEmpty(sentData.PasswordHash))
+                citizen.PasswordHash = HashPassword(sentData.PasswordHash);
+            if (!string.IsNullOrEmpty(sentData.ProfileImageUrl))
+                citizen.ProfileImageUrl = sentData.ProfileImageUrl;
+            if (!string.IsNullOrEmpty(sentData.JobTitle))
+                citizen.JobTitle = sentData.JobTitle;
+            if (!string.IsNullOrEmpty(sentData.HomeAddress))
+                citizen.HomeAddress = sentData.HomeAddress;
+            if (!string.IsNullOrEmpty(sentData.AiSensitivity))
+                citizen.AiSensitivity = sentData.AiSensitivity;
 
-            if (!string.IsNullOrEmpty(sentUser.FullName))
-                existingUser.FullName = sentUser.FullName;
-
-            if (!string.IsNullOrEmpty(sentUser.Email))
-                existingUser.Email = sentUser.Email;
-
-            if (!string.IsNullOrEmpty(sentUser.PasswordHash))
-                existingUser.PasswordHash = HashPassword(sentUser.PasswordHash);
-
-            userRepo.UpdateAsync(existingUser);
+            userRepo.UpdateAsync(citizen);
             await userRepo.SaveChangesAsync();
-            return existingUser.Id;
+            return citizen.Id;
+        }
+
+        // ────────────────────────────────────────────
+        //  Update Official
+        // ────────────────────────────────────────────
+        public async Task<int> UpdateOfficialAsync(int id, Official sentData)
+        {
+            var user = await userRepo.GetByIdAsync(id);
+            if (user is not Official official || official.IsDeleted) return 0;
+
+            if (!string.IsNullOrEmpty(sentData.FullName))
+                official.FullName = sentData.FullName;
+            if (!string.IsNullOrEmpty(sentData.Email))
+                official.Email = sentData.Email;
+            if (!string.IsNullOrEmpty(sentData.PasswordHash))
+                official.PasswordHash = HashPassword(sentData.PasswordHash);
+            if (!string.IsNullOrEmpty(sentData.ProfileImageUrl))
+                official.ProfileImageUrl = sentData.ProfileImageUrl;
+            if (!string.IsNullOrEmpty(sentData.HomeAddress))
+                official.HomeAddress = sentData.HomeAddress;
+            if (!string.IsNullOrEmpty(sentData.Rank))
+                official.Rank = sentData.Rank;
+            if (sentData.MapProximityKm > 0)
+                official.MapProximityKm = sentData.MapProximityKm;
+
+            userRepo.UpdateAsync(official);
+            await userRepo.SaveChangesAsync();
+            return official.Id;
         }
 
         // ────────────────────────────────────────────
@@ -83,7 +133,7 @@ namespace CTOS.Web.Services
             await userRepo.SaveChangesAsync();
             return true;
         }
-        
+
         // ────────────────────────────────────────────
         //  Private Helper
         // ────────────────────────────────────────────

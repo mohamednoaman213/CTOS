@@ -28,6 +28,7 @@ namespace CTOS.Web.Database.AppDbContext {
         public DbSet<Event> Events { get; set; }
 
         public DbSet<User> Users { get; set; }
-        //public DbSet<Location> Locations { get; set; }
+        public DbSet<Citizen> Citizens { get; set; }
+        public DbSet<Official> Officials { get; set; }
     }
 }
