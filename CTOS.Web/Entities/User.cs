@@ -66,6 +66,8 @@
 
         // Impact grade shown in profile — e.g. "B-"
         public string? ImpactGrade { get; set; }
+        public int? UnitId { get; set; }
+        public Unit? Unit { get; set; }
     }
 
 

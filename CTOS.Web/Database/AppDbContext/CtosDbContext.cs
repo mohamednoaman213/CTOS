@@ -30,5 +30,6 @@ namespace CTOS.Web.Database.AppDbContext {
         public DbSet<User> Users { get; set; }
         public DbSet<Citizen> Citizens { get; set; }
         public DbSet<Official> Officials { get; set; }
+        public DbSet<Unit> Units { get; set; }
     }
 }
