@@ -12,7 +12,7 @@ namespace CTOS.Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EventController(EventService eventService, CloudinaryService cloudinaryService) : ControllerBase
+    public class EventController(EventService eventService, Cloudinaryservice cloudinaryService) : ControllerBase
     {
         // ── GET api/event/get-all ────────────────────
         [HttpGet("Get-All")]
@@ -35,6 +35,7 @@ namespace CTOS.Web.Controllers
         // Citizen sends: image + event data as multipart/form-data
         [HttpPost("Create")]
         [Consumes("multipart/form-data")]
+        
         public async Task<IActionResult> CreateEvent(
             [FromForm] string eventName,
             [FromForm] string description,
