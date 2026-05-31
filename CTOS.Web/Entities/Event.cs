@@ -28,6 +28,7 @@ namespace CTOS.Web.Entities {
 
         // UnderProcessing / Resolved / NotResolved
         public string Status { get; set; } = "UnderProcessing";
+        public string? ImageUrl { get; set; }
 
         #region Relation with User
         public int UserId { get; set; }

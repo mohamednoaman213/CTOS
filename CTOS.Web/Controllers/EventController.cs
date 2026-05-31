@@ -8,48 +8,82 @@ using CTOS.Web.Entities;
 using CTOS.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CTOS.Web.Controllers {
-
+namespace CTOS.Web.Controllers
+{
     [ApiController]
     [Route("api/[controller]")]
-    public class EventController(EventService eventService) : ControllerBase {
-
-
-        [HttpGet]
-        [Route("Get-All")]
-        public async Task<IActionResult> GetAllEvents() {
+    public class EventController(EventService eventService, CloudinaryService cloudinaryService) : ControllerBase
+    {
+        // ── GET api/event/get-all ────────────────────
+        [HttpGet("Get-All")]
+        public async Task<IActionResult> GetAllEvents()
+        {
             var result = await eventService.GetAllEventsAsync();
             return Ok(result);
         }
 
-        [HttpPost]
-        [Route("Create-Event")]
-        public async Task<IActionResult> CreateEvent(Event @event) {
-            var result = await eventService.CreateEventAsync(@event);
-            return Ok(result);
-        }
-
-        [HttpGet]
-        [Route("Event/{id}")]
-        public async Task<IActionResult> GetEventById(int id) {
+        // ── GET api/event/{id} ───────────────────────
+        [HttpGet("Event/{id}")]
+        public async Task<IActionResult> GetEventById(int id)
+        {
             var result = await eventService.GetEventByIdAsync(id);
+            if (result is null) return NotFound($"Event with Id:{id} not found.");
             return Ok(result);
         }
 
-        [HttpPut]
-        [Route("Event/{id}")]
-        public async Task<IActionResult> UpdateEvent(int id, Event @event) {
+        // ── POST api/event/create ────────────────────
+        // Citizen sends: image + event data as multipart/form-data
+        [HttpPost("Create")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> CreateEvent(
+            [FromForm] string eventName,
+            [FromForm] string description,
+            [FromForm] string location,
+            [FromForm] string category,
+            [FromForm] int userId,
+            [FromForm] IFormFile image)
+        {
+            // 1. Upload image to Cloudinary
+            var imageUrl = await cloudinaryService.UploadImageAsync(image, "ctos-events");
+            if (imageUrl is null)
+                return BadRequest("Image upload failed.");
+
+            // 2. Build the Event object
+            var newEvent = new Event
+            {
+                EventId = Guid.NewGuid().ToString(),
+                EventName = eventName,
+                Description = description,
+                Location = location,
+                Category = category,
+                UserId = userId,
+                ImageUrl = imageUrl,
+                Status = "UnderProcessing",
+                Priority = "Pending",  // AI will update this later
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // 3. Save to DB
+            var id = await eventService.CreateEventAsync(newEvent);
+            return Ok(new { Id = id, ImageUrl = imageUrl });
+        }
+
+        // ── PUT api/event/{id} ───────────────────────
+        [HttpPut("Event/{id}")]
+        public async Task<IActionResult> UpdateEvent(int id, Event @event)
+        {
             var result = await eventService.UpdateEventAsync(id, @event);
-            return Ok(result);
+            if (result == 0) return NotFound($"Event with Id:{id} not found.");
+            return Ok(new { UpdatedId = result });
         }
 
-        [HttpDelete]
-        [Route("Event/{id}")]
-        public async Task<IActionResult> DeleteEvent(int id) {
+        // ── DELETE api/event/{id} ────────────────────
+        [HttpDelete("Event/{id}")]
+        public async Task<IActionResult> DeleteEvent(int id)
+        {
             var result = await eventService.DeletedEventAsync(id);
-            return Ok(result);
+            if (!result) return NotFound($"Event with Id:{id} not found.");
+            return Ok("Event deleted.");
         }
-
-
     }
 }

@@ -28,6 +28,7 @@ namespace CTOS.Web
             builder.Services.AddScoped<UserService>();
             builder.Services.AddScoped<UnitRepo>();
             builder.Services.AddScoped<UnitService>();
+            builder.Services.AddScoped<Cloudinaryservice>();
             #endregion
 
 

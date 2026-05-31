@@ -61,6 +61,9 @@ namespace CTOS.Web.Database.EntityConfiguration {
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
 
+            builder.Property(x => x.ImageUrl)
+       .HasMaxLength(1024);
+
             #region Relationship with User
             //builder.HasOne(x => x.User)
             //    .WithMany() 
