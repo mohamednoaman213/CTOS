@@ -35,10 +35,9 @@ namespace CTOS.Web
             builder.Services.AddDbContext<CtosDbContext>(options => {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
-            
-            
-            var app = builder.Build();
 
+            var app = builder.Build();
+           
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {

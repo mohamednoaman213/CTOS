@@ -32,20 +32,11 @@ namespace CTOS.Web.Controllers
         }
 
         // ── POST api/event/create ────────────────────
-        // Citizen sends: image + event data as multipart/form-data
         [HttpPost("Create")]
-        [Consumes("multipart/form-data")]
-        
-        public async Task<IActionResult> CreateEvent(
-            [FromForm] string eventName,
-            [FromForm] string description,
-            [FromForm] string location,
-            [FromForm] string category,
-            [FromForm] int userId,
-            [FromForm] IFormFile image)
+        public async Task<IActionResult> CreateEvent([FromForm] CreateEventRequest request)
         {
             // 1. Upload image to Cloudinary
-            var imageUrl = await cloudinaryService.UploadImageAsync(image, "ctos-events");
+            var imageUrl = await cloudinaryService.UploadImageAsync(request.Image, "ctos-events");
             if (imageUrl is null)
                 return BadRequest("Image upload failed.");
 
@@ -53,14 +44,14 @@ namespace CTOS.Web.Controllers
             var newEvent = new Event
             {
                 EventId = Guid.NewGuid().ToString(),
-                EventName = eventName,
-                Description = description,
-                Location = location,
-                Category = category,
-                UserId = userId,
+                EventName = request.EventName,
+                Description = request.Description,
+                Location = request.Location,
+                Category = request.Category,
+                UserId = request.UserId,
                 ImageUrl = imageUrl,
                 Status = "UnderProcessing",
-                Priority = "Pending",  // AI will update this later
+                Priority = "Pending",
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -86,5 +77,16 @@ namespace CTOS.Web.Controllers
             if (!result) return NotFound($"Event with Id:{id} not found.");
             return Ok("Event deleted.");
         }
+    }
+
+    // ── DTO ──────────────────────────────────────────
+    public class CreateEventRequest
+    {
+        public string EventName { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public string Location { get; set; } = null!;
+        public string Category { get; set; } = null!;
+        public int UserId { get; set; }
+        public IFormFile Image { get; set; } = null!;
     }
 }
