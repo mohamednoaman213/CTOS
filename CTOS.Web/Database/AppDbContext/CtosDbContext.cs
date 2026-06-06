@@ -5,6 +5,7 @@
 // Every Dbset represents a new table to be created
 
 using CTOS.Web.Entities;
+using FirebaseAdmin.Messaging;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
@@ -31,5 +32,6 @@ namespace CTOS.Web.Database.AppDbContext {
         public DbSet<Citizen> Citizens { get; set; }
         public DbSet<Official> Officials { get; set; }
         public DbSet<Unit> Units { get; set; }
+        public DbSet<CTOS.Web.Entities.Notification> Notifications { get; set; }
     }
 }

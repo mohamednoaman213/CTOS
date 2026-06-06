@@ -23,6 +23,7 @@
 
         public ICollection<Event> Events { get; set; } = new List<Event>();
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string? DeviceToken { get; set; }
     }
     public class Citizen : User
     {

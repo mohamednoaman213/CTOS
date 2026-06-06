@@ -29,8 +29,9 @@ namespace CTOS.Web
             builder.Services.AddScoped<UnitRepo>();
             builder.Services.AddScoped<UnitService>();
             builder.Services.AddScoped<Cloudinaryservice>();
-            #endregion
-
+            builder.Services.AddScoped<NotificationRepo>();
+            builder.Services.AddScoped<NotificationService>();
+# endregion
 
             builder.Services.AddDbContext<CtosDbContext>(options => {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));

@@ -57,6 +57,8 @@ namespace CTOS.Web.Database.EntityConfiguration
                    .IsRequired()
                    .HasDefaultValueSql("GETUTCDATE()");
 
+            //notification token for push notifications
+            builder.Property(x => x.DeviceToken).HasMaxLength(512);
             // ── Relationship with Events ─────────────────
             builder.HasMany(x => x.Events)
                    .WithOne(e => e.User)

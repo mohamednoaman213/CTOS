@@ -28,7 +28,10 @@ namespace CTOS.Web.Repositroies
         public async Task<Official?> GetOfficialByBadgeAsync(string badgeId)
             => await context.Set<Official>()
                             .FirstOrDefaultAsync(o => o.BadgeId == badgeId);
-
+        public async Task<IEnumerable<Official>> GetOfficialsByDepartmentAsync(string department)
+    => await context.Set<Official>()
+                    .Where(o => o.Department == department && !o.IsDeleted)
+                    .ToListAsync();
         // ── CRUD ─────────────────────────────────────────
         public async Task AddAsync(User entity)
             => await context.AddAsync(entity);
