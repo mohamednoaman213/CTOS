@@ -6,28 +6,64 @@ namespace CTOS.Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UserController(UserService userService) : ControllerBase
-    {
-        // ── POST api/user/register/citizen ───────────────
+    public class UserController(UserService userService,  Cloudinaryservice cloudinaryService) : ControllerBase
+    {// ── POST api/user/register/citizen ───────────────
         [HttpPost("Register/Citizen")]
-        public async Task<IActionResult> RegisterCitizen(Citizen citizen)
+        [Consumes("multipart/form-data")]
+       
+        public async Task<IActionResult> RegisterCitizen(
+    [FromForm] CitizenRegisterDto dto)
         {
+            var frontUrl = await cloudinaryService.UploadImageAsync(dto.FrontId, "ctos-ids");
+            var backUrl = await cloudinaryService.UploadImageAsync(dto.BackId, "ctos-ids");
+
+            var citizen = new Citizen
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                PasswordHash = dto.PasswordHash,
+                NationalId = dto.NationalId,
+                NationalIdFrontImageUrl = frontUrl,
+                NationalIdBackImageUrl = backUrl,
+                UserId = "temp",
+                UserType = "Citizen"
+            };
+
             var id = await userService.RegisterCitizenAsync(citizen);
             if (id == 0) return BadRequest("Registration failed.");
+
             return Ok(new { Id = id });
         }
 
+
         // ── POST api/user/register/official ─────────────
         [HttpPost("Register/Official")]
-        public async Task<IActionResult> RegisterOfficial(Official official)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> RegisterOfficial(
+     [FromForm] OfficialRegisterDto dto)
         {
+            var frontUrl = await cloudinaryService.UploadImageAsync(dto.FrontId, "ctos-ids");
+            var backUrl = await cloudinaryService.UploadImageAsync(dto.BackId, "ctos-ids");
+
+            var official = new Official
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                PasswordHash = dto.PasswordHash,
+                NationalId = dto.NationalId,
+                NationalIdFrontImageUrl = frontUrl,
+                NationalIdBackImageUrl = backUrl,
+                UserId = "temp",
+                UserType = "Official"
+            };
+
             var id = await userService.RegisterOfficialAsync(official);
             if (id == 0) return BadRequest("Registration failed.");
+
             return Ok(new { Id = id });
         }
 
         // ── POST api/user/login ──────────────────────────
-        // Body: { "email": "...", "passwordHash": "..." }
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] User user)
         {
@@ -37,6 +73,7 @@ namespace CTOS.Web.Controllers
             if (result is Official official)
                 return Ok(new
                 {
+                    official.Id,
                     official.UserId,
                     official.FullName,
                     official.Email,
@@ -50,6 +87,7 @@ namespace CTOS.Web.Controllers
             if (result is Citizen citizen)
                 return Ok(new
                 {
+                    citizen.Id,
                     citizen.UserId,
                     citizen.FullName,
                     citizen.Email,
@@ -70,6 +108,7 @@ namespace CTOS.Web.Controllers
             if (user is Official official)
                 return Ok(new
                 {
+                    official.Id,
                     official.UserId,
                     official.FullName,
                     official.Email,
@@ -90,6 +129,7 @@ namespace CTOS.Web.Controllers
             if (user is Citizen citizen)
                 return Ok(new
                 {
+                    citizen.Id,
                     citizen.UserId,
                     citizen.FullName,
                     citizen.Email,
@@ -135,5 +175,28 @@ namespace CTOS.Web.Controllers
             if (!result) return NotFound($"User with Id:{id} not found.");
             return Ok("Account deleted successfully.");
         }
+
+        public class CitizenRegisterDto
+    {
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string PasswordHash { get; set; }
+        public string NationalId { get; set; }
+
+        public IFormFile FrontId { get; set; }
+        public IFormFile BackId { get; set; }
     }
+
+    public class OfficialRegisterDto
+    {
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string PasswordHash { get; set; }
+        public string NationalId { get; set; }
+
+        public IFormFile FrontId { get; set; }
+        public IFormFile BackId { get; set; }
+    }
+
+}
 }
