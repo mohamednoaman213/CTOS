@@ -1,1 +1,1 @@
-# CTOS
+# CTOS ( Citizen Threat Observation System ) is an AI powered mobile and web application that allows citizens to submit police and fire reports instantly, securely, and with enhanced accuracy. Our goal is to modernize how incidents are reported, verified, and prioritized transforming public safety into a smarter, faster, and more efficient process.
