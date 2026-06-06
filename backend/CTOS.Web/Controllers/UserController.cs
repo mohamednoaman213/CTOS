@@ -54,7 +54,10 @@ namespace CTOS.Web.Controllers
                 NationalIdFrontImageUrl = frontUrl,
                 NationalIdBackImageUrl = backUrl,
                 UserId = "temp",
-                UserType = "Official"
+                UserType = "Official",
+                BadgeId = "PENDING",
+                Rank = "OFFICER",
+                Department = "General"
             };
 
             var id = await userService.RegisterOfficialAsync(official);

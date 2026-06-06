@@ -13,6 +13,16 @@ class UnitModel extends Equatable {
     required this.status,
   });
 
+  factory UnitModel.fromJson(Map<String, dynamic> json) {
+    return UnitModel(
+      id: json['id'].toString(),
+      name: json['unitName'] as String? ?? 'UNIT ${json['id']}',
+      status: (json['status'] as String?) == 'Available'
+          ? UnitStatus.available
+          : UnitStatus.occupied,
+    );
+  }
+
   static final mockList = [
     const UnitModel(id: '14', name: 'UNIT 14', status: UnitStatus.available),
     const UnitModel(id: '23', name: 'UNIT 23', status: UnitStatus.occupied),

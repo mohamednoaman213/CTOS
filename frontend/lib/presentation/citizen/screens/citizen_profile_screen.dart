@@ -145,9 +145,7 @@ class CitizenProfileScreen extends StatelessWidget {
               _InfoTile(
                 icon: Icons.people_outline,
                 title: 'Safety Network',
-                subtitle: AppSession.instance.myFriends.isEmpty
-                    ? 'No contacts yet'
-                    : '${AppSession.instance.myFriends.length} Active Safety Contacts',
+                subtitle: 'No contacts yet',
                 trailing: const Icon(Icons.chevron_right,
                     color: AppColors.textSecondary),
               ),

@@ -9,6 +9,7 @@ class NotificationModel extends Equatable {
   final NotificationType type;
   final String? incidentId;
   final String timeAgo;
+  final bool isRead;
 
   const NotificationModel({
     required this.id,
@@ -16,7 +17,43 @@ class NotificationModel extends Equatable {
     required this.type,
     this.incidentId,
     required this.timeAgo,
+    this.isRead = false,
   });
+
+  factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final title = json['title'] as String? ?? '';
+    return NotificationModel(
+      id: json['id'].toString(),
+      message: json['body'] as String? ?? '',
+      type: _parseType(title),
+      incidentId: json['eventId']?.toString(),
+      timeAgo: _toTimeAgo(json['createdAt'] as String?),
+      isRead: json['isRead'] as bool? ?? false,
+    );
+  }
+
+  static NotificationType _parseType(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('critical') || t.contains('emergency')) return NotificationType.critical;
+    if (t.contains('high') || t.contains('backup') || t.contains('report')) return NotificationType.high;
+    if (t.contains('live')) return NotificationType.live;
+    if (t.contains('friend')) return NotificationType.friend;
+    return NotificationType.info;
+  }
+
+  static String _toTimeAgo(String? iso) {
+    if (iso == null) return 'Unknown';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inSeconds < 60) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+      if (diff.inHours < 24) return '${diff.inHours} hr ago';
+      return '${diff.inDays} days ago';
+    } catch (_) {
+      return 'Unknown';
+    }
+  }
 
   IncidentPriority get priority {
     switch (type) {

@@ -41,14 +41,10 @@ class UserModel extends Equatable {
       role: isCitizen ? UserRole.citizen : UserRole.officer,
       address: '',
       isOnline: true,
-      reportCount: s.reportCount,
-      aiScore: s.reportCount > 0 ? 72.0 : 0.0,
-      impactGrade: s.reportCount > 5
-          ? 'A'
-          : s.reportCount > 0
-              ? 'B'
-              : 'N/A',
-      level: 1 + (s.reportCount ~/ 10),
+      reportCount: 0,
+      aiScore: 0.0,
+      impactGrade: 'N/A',
+      level: 1,
     );
   }
 

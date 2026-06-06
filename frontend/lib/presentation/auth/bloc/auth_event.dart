@@ -19,19 +19,19 @@ class StartVerificationEvent extends AuthEvent {
   final String email;
   final String password;
   final String nationalId;
-  final String? idFrontBase64;
-  final String? idBackBase64;
+  final String? idFrontPath;
+  final String? idBackPath;
   const StartVerificationEvent({
     required this.role,
     required this.name,
     required this.email,
     required this.password,
     required this.nationalId,
-    this.idFrontBase64,
-    this.idBackBase64,
+    this.idFrontPath,
+    this.idBackPath,
   });
   @override
-  List<Object?> get props => [role, name, email, password, nationalId, idFrontBase64, idBackBase64];
+  List<Object?> get props => [role, name, email, password, nationalId, idFrontPath, idBackPath];
 }
 
 class LoginEvent extends AuthEvent {

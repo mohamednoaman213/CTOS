@@ -2,14 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/routes/app_router.dart';
 import '../../../core/session/app_session.dart';
-import '../../../data/models/incident_model.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/services/api_client.dart';
 import '../../shared/widgets/app_header.dart';
 
 enum AnalysisStep {
@@ -108,14 +109,6 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
     return 'GENERAL INCIDENT';
   }
 
-  IncidentPriority _priorityFromCategory(String category) {
-    if (category.contains('FIRE')) return IncidentPriority.critical;
-    if (category.contains('ACCIDENT') || category.contains('FLOOD')) {
-      return IncidentPriority.high;
-    }
-    return IncidentPriority.medium;
-  }
-
   Future<void> _runAnalysis() async {
     await Future.delayed(const Duration(milliseconds: 800));
     setState(() => _step = AnalysisStep.analyzing);
@@ -187,33 +180,56 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
     }
   }
 
-  void _submitReport() {
+  Future<void> _submitReport() async {
+    if (_pickedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload an image first.')),
+      );
+      return;
+    }
+
+    setState(() => _step = AnalysisStep.uploading);
+
     final desc = _descController.text.trim();
     final title = desc.isNotEmpty
         ? (desc.length > 30 ? '${desc.substring(0, 30)}...' : desc)
         : _mlCategory != 'GENERAL INCIDENT'
             ? _mlCategory
             : 'Citizen Report';
+    final location = _detectedLocation != null
+        ? '${_detectedLocation!.latitude.toStringAsFixed(5)}, ${_detectedLocation!.longitude.toStringAsFixed(5)}'
+        : 'Unknown';
 
-    final report = IncidentModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString().substring(7),
-      title: title,
-      location: _detectedLocation != null
-          ? '${_detectedLocation!.latitude.toStringAsFixed(4)}, ${_detectedLocation!.longitude.toStringAsFixed(4)}'
-          : 'Unknown',
-      sector: _mlCategory,
-      priority: _step == AnalysisStep.done
-          ? _priorityFromCategory(_mlCategory)
-          : IncidentPriority.medium,
-      status: IncidentStatus.pending,
-      timeAgo: 'Just now',
-      aiVerified: _step == AnalysisStep.done,
-      lat: _detectedLocation?.latitude ?? 31.2,
-      lng: _detectedLocation?.longitude ?? 29.9,
-    );
+    try {
+      final uri = Uri.parse('${ApiClient.baseUrl}/api/event/create');
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['EventName'] = title
+        ..fields['Description'] = desc.isNotEmpty ? desc : title
+        ..fields['Location'] = location
+        ..fields['Category'] = _mlCategory
+        ..fields['UserId'] = AppSession.instance.userId.toString()
+        ..files.add(await http.MultipartFile.fromPath('Image', _pickedImage!.path));
 
-    AppSession.instance.addReport(report);
-    context.go(AppRouter.reportSubmitted);
+      final streamed = await request.send().timeout(const Duration(seconds: 30));
+
+      if (streamed.statusCode == 200 || streamed.statusCode == 201) {
+        if (mounted) context.go(AppRouter.reportSubmitted);
+      } else {
+        setState(() => _step = AnalysisStep.done);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Submission failed (${streamed.statusCode}). Try again.')),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _step = AnalysisStep.done);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Network error. Check your connection.')),
+        );
+      }
+    }
   }
 
   @override

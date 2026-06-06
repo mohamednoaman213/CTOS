@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,12 +59,6 @@ class _IdentityVerificationScreenState
     });
   }
 
-  Future<String?> _toBase64(File? file) async {
-    if (file == null) return null;
-    final bytes = await file.readAsBytes();
-    return 'data:image/jpeg;base64,${base64Encode(bytes)}';
-  }
-
   Future<void> _onInitialize() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
@@ -90,9 +83,6 @@ class _IdentityVerificationScreenState
     AppSession.instance.email = email;
     AppSession.instance.role = widget.role;
 
-    final frontBase64 = await _toBase64(_idFrontImage);
-    final backBase64 = await _toBase64(_idBackImage);
-
     if (!mounted) return;
 
     context.read<AuthBloc>().add(
@@ -102,8 +92,8 @@ class _IdentityVerificationScreenState
             email: email,
             password: password,
             nationalId: nationalId,
-            idFrontBase64: frontBase64,
-            idBackBase64: backBase64,
+            idFrontPath: _idFrontImage?.path,
+            idBackPath: _idBackImage?.path,
           ),
         );
 

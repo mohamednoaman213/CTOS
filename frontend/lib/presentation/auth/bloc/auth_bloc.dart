@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -28,25 +27,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(VerifyingIdentityState(role: event.role, name: event.name));
 
     try {
-      final body = jsonEncode({
-        'userId': _generateUserId(),
-        'fullName': event.name,
-        'email': event.email,
-        'passwordHash': event.password,
-        'nationalId': event.nationalId,
-        'userType': event.role == 'officer' ? 'Official' : 'Citizen',
-        'nationalIdFrontImageUrl': event.idFrontBase64 ?? '',
-        'nationalIdBackImageUrl': event.idBackBase64 ?? '',
-        // TODO: swap image fields for a proper file-upload endpoint in production
-      });
-
       final endpoint = event.role == 'officer'
           ? '$_baseUrl/api/User/Register/Official'
           : '$_baseUrl/api/User/Register/Citizen';
 
-      final response = await _postWithRetry(endpoint, body);
-      print('REGISTER STATUS: ${response.statusCode}');
-      print('REGISTER BODY: ${response.body}');
+      final request = http.MultipartRequest('POST', Uri.parse(endpoint))
+        ..fields['FullName'] = event.name
+        ..fields['Email'] = event.email
+        ..fields['PasswordHash'] = event.password
+        ..fields['NationalId'] = event.nationalId;
+
+      if (event.idFrontPath != null) {
+        request.files.add(
+            await http.MultipartFile.fromPath('FrontId', event.idFrontPath!));
+      }
+      if (event.idBackPath != null) {
+        request.files.add(
+            await http.MultipartFile.fromPath('BackId', event.idBackPath!));
+      }
+
+      final streamed = await request.send().timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamed);
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final userId = (data['id'] as num?)?.toInt() ?? 0;
@@ -63,8 +65,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthErrorState('Registration failed (${response.statusCode}). Please try again.'));
       }
     } catch (e) {
-      print('REGISTER ERROR: $e');
-      emit(AuthErrorState('Error: $e'));
+      emit(AuthErrorState('Connection error. Check your internet and try again.'));
     }
   }
 
@@ -118,12 +119,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthInitial());
   }
 
-  String _generateUserId() {
-    final rng = Random.secure();
-    String hex(int bytes) => List.generate(bytes, (_) => rng.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
-    return '${hex(4)}-${hex(2)}-${hex(2)}-${hex(2)}-${hex(6)}';
-  }
-
   Future<http.Response> _postWithRetry(String url, String body,
       {int retries = 3}) async {
     for (int attempt = 1; attempt <= retries; attempt++) {
@@ -137,7 +132,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             .timeout(const Duration(seconds: 30));
         return response;
       } catch (e) {
-        print('Attempt $attempt failed: $e');
         if (attempt == retries) rethrow;
         await Future.delayed(const Duration(seconds: 2));
       }

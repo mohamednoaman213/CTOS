@@ -15,6 +15,7 @@ class IncidentModel extends Equatable {
   final bool aiVerified;
   final double lat;
   final double lng;
+  final int? userId;
 
   const IncidentModel({
     required this.id,
@@ -28,7 +29,59 @@ class IncidentModel extends Equatable {
     this.aiVerified = true,
     this.lat = 31.2,
     this.lng = 29.9,
+    this.userId,
   });
+
+  factory IncidentModel.fromJson(Map<String, dynamic> json) {
+    return IncidentModel(
+      id: json['eventId'] as String? ?? json['id'].toString(),
+      title: json['eventName'] as String? ?? '',
+      location: json['location'] as String? ?? '',
+      sector: json['category'] as String? ?? '',
+      priority: _parsePriority(json['priority'] as String?),
+      status: _parseStatus(json['status'] as String?),
+      timeAgo: _toTimeAgo(json['createdAt'] as String?),
+      imageUrl: json['imageUrl'] as String?,
+      aiVerified: false,
+      lat: 31.2,
+      lng: 29.9,
+      userId: (json['userId'] as num?)?.toInt(),
+    );
+  }
+
+  static IncidentPriority _parsePriority(String? p) {
+    switch (p?.toLowerCase()) {
+      case 'critical': return IncidentPriority.critical;
+      case 'high': return IncidentPriority.high;
+      case 'mid':
+      case 'medium': return IncidentPriority.medium;
+      case 'low': return IncidentPriority.low;
+      default: return IncidentPriority.medium;
+    }
+  }
+
+  static IncidentStatus _parseStatus(String? s) {
+    switch (s?.toLowerCase()) {
+      case 'resolved': return IncidentStatus.resolved;
+      case 'notresolved': return IncidentStatus.ongoing;
+      case 'underprocessing':
+      default: return IncidentStatus.pending;
+    }
+  }
+
+  static String _toTimeAgo(String? iso) {
+    if (iso == null) return 'Unknown';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inSeconds < 60) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+      if (diff.inHours < 24) return '${diff.inHours} hr ago';
+      return '${diff.inDays} days ago';
+    } catch (_) {
+      return 'Unknown';
+    }
+  }
 
   static final mockList = [
     const IncidentModel(
@@ -115,5 +168,5 @@ class IncidentModel extends Equatable {
   ];
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => [id, userId];
 }
