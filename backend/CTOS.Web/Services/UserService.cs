@@ -1,5 +1,7 @@
 ﻿using CTOS.Web.Entities;
 using CTOS.Web.Repositroies;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 

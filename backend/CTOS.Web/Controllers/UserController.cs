@@ -82,10 +82,11 @@ namespace CTOS.Web.Controllers
 
         // ── POST api/user/login ──────────────────────────
         [HttpPost("Login")]
-        public async Task<IActionResult> Login([FromBody] User user)
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            var result = await userService.LoginAsync(user.Email, user.PasswordHash);
-            if (result is null) return Unauthorized("Invalid email or password.");
+            var result = await userService.LoginAsync(dto.Email, dto.Password);
+            if (result is null)
+                return Unauthorized("Invalid email or password.");
 
             if (result is Official official)
                 return Ok(new
@@ -214,6 +215,10 @@ namespace CTOS.Web.Controllers
         public IFormFile FrontId { get; set; }
         public IFormFile BackId { get; set; }
     }
-
-}
+        public class LoginDto
+        {
+            public string Email { get; set; }
+            public string Password { get; set; }
+        }
+    }
 }
