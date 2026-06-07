@@ -14,25 +14,32 @@ namespace CTOS.Web.Controllers
         public async Task<IActionResult> RegisterCitizen(
     [FromForm] CitizenRegisterDto dto)
         {
-            var frontUrl = await cloudinaryService.UploadImageAsync(dto.FrontId, "ctos-ids");
-            var backUrl = await cloudinaryService.UploadImageAsync(dto.BackId, "ctos-ids");
-
-            var citizen = new Citizen
+            try
             {
-                FullName = dto.FullName,
-                Email = dto.Email,
-                PasswordHash = dto.PasswordHash,
-                NationalId = dto.NationalId,
-                NationalIdFrontImageUrl = frontUrl,
-                NationalIdBackImageUrl = backUrl,
-                UserId = "temp",
-                UserType = "Citizen"
-            };
+                var frontUrl = await cloudinaryService.UploadImageAsync(dto.FrontId, "ctos-ids");
+                var backUrl = await cloudinaryService.UploadImageAsync(dto.BackId, "ctos-ids");
 
-            var id = await userService.RegisterCitizenAsync(citizen);
-            if (id == 0) return BadRequest("Registration failed.");
+                var citizen = new Citizen
+                {
+                    FullName = dto.FullName,
+                    Email = dto.Email,
+                    PasswordHash = dto.PasswordHash,
+                    NationalId = dto.NationalId,
+                    NationalIdFrontImageUrl = frontUrl,
+                    NationalIdBackImageUrl = backUrl,
+                    UserId = "temp",
+                    UserType = "Citizen"
+                };
 
-            return Ok(new { Id = id });
+                var id = await userService.RegisterCitizenAsync(citizen);
+                if (id == 0) return BadRequest("Registration failed.");
+
+                return Ok(new { Id = id });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message, detail = ex.InnerException?.Message });
+            }
         }
 
 
@@ -42,28 +49,35 @@ namespace CTOS.Web.Controllers
         public async Task<IActionResult> RegisterOfficial(
      [FromForm] OfficialRegisterDto dto)
         {
-            var frontUrl = await cloudinaryService.UploadImageAsync(dto.FrontId, "ctos-ids");
-            var backUrl = await cloudinaryService.UploadImageAsync(dto.BackId, "ctos-ids");
-
-            var official = new Official
+            try
             {
-                FullName = dto.FullName,
-                Email = dto.Email,
-                PasswordHash = dto.PasswordHash,
-                NationalId = dto.NationalId,
-                NationalIdFrontImageUrl = frontUrl,
-                NationalIdBackImageUrl = backUrl,
-                UserId = "temp",
-                UserType = "Official",
-                BadgeId = "PENDING",
-                Rank = "OFFICER",
-                Department = "General"
-            };
+                var frontUrl = await cloudinaryService.UploadImageAsync(dto.FrontId, "ctos-ids");
+                var backUrl = await cloudinaryService.UploadImageAsync(dto.BackId, "ctos-ids");
 
-            var id = await userService.RegisterOfficialAsync(official);
-            if (id == 0) return BadRequest("Registration failed.");
+                var official = new Official
+                {
+                    FullName = dto.FullName,
+                    Email = dto.Email,
+                    PasswordHash = dto.PasswordHash,
+                    NationalId = dto.NationalId,
+                    NationalIdFrontImageUrl = frontUrl,
+                    NationalIdBackImageUrl = backUrl,
+                    UserId = "temp",
+                    UserType = "Official",
+                    BadgeId = "PENDING",
+                    Rank = "OFFICER",
+                    Department = "General"
+                };
 
-            return Ok(new { Id = id });
+                var id = await userService.RegisterOfficialAsync(official);
+                if (id == 0) return BadRequest("Registration failed.");
+
+                return Ok(new { Id = id });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message, detail = ex.InnerException?.Message });
+            }
         }
 
         // ── POST api/user/login ──────────────────────────

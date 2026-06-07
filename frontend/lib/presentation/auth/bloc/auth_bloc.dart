@@ -62,7 +62,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await Future.delayed(const Duration(seconds: 1));
         emit(AuthenticatedState(role: event.role, name: event.name, userId: userId));
       } else {
-        emit(AuthErrorState('Registration failed (${response.statusCode}). Please try again.'));
+        String msg = 'Registration failed (${response.statusCode}).';
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map && body['error'] != null) {
+            msg += ' ${body['error']}';
+            if (body['detail'] != null) msg += ' ${body['detail']}';
+          } else if (body is String) {
+            msg += ' $body';
+          }
+        } catch (_) {}
+        emit(AuthErrorState(msg));
       }
     } catch (e) {
       emit(AuthErrorState('Connection error. Check your internet and try again.'));
