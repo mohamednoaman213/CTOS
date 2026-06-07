@@ -48,13 +48,13 @@
     public class Official : User
     {
         // "3021-SN-22X"
-        public string BadgeId { get; set; } = null!;
+        public string? BadgeId { get; set; }
 
         // "DISPATCHER LVL 4"
-        public string Rank { get; set; } = null!;
+        public string? Rank { get; set; }
 
         // Police / Fire / Hospital / Infrastructure
-        public string Department { get; set; } = null!;
+        public string? Department { get; set; }
 
         // "4 El Manar St, Sidi Beshr Qebly, Alexandria"
         public string? HomeAddress { get; set; }
