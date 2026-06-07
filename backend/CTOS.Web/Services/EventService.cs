@@ -96,6 +96,37 @@ namespace CTOS.Web.Services {
             return existingEvent.Id;
         }
 
+        public async Task<int> UpdateStatusAsync(int id, string status)
+        {
+            var ev = await eventRepo.GetByIdAsync(id);
+            if (ev == null) return 0;
+            if (ev.Status == status) return ev.Id;
+
+            ev.Status = status;
+
+            var citizen = await userRepo.GetByIdAsync(ev.UserId);
+            if (citizen != null)
+            {
+                var msg = status switch
+                {
+                    "NotResolved" => "An officer has been assigned to your report.",
+                    "Resolved" => "Your report has been resolved. ✅",
+                    _ => $"Your report status has been updated to: {status}"
+                };
+                await notificationService.SendAndSaveAsync(
+                    citizen.Id,
+                    "Report Update 🔔",
+                    $"'{ev.EventName}': {msg}",
+                    citizen.DeviceToken,
+                    ev.Id
+                );
+            }
+
+            eventRepo.UpdateAsync(ev);
+            await eventRepo.SaveChangesAsync();
+            return ev.Id;
+        }
+
         public async Task<bool> DeletedEventAsync(int id)
         {
             var existingEvent = await eventRepo.GetByIdAsync(id);

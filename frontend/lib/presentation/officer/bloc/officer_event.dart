@@ -34,3 +34,11 @@ class AssignIncidentEvent extends OfficerEvent {
   @override
   List<Object?> get props => [incidentId];
 }
+
+class UpdateIncidentStatusEvent extends OfficerEvent {
+  final int dbId;
+  final String newStatus;
+  const UpdateIncidentStatusEvent({required this.dbId, required this.newStatus});
+  @override
+  List<Object?> get props => [dbId, newStatus];
+}

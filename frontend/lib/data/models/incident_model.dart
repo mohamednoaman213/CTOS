@@ -5,6 +5,7 @@ enum IncidentStatus { ongoing, resolved, pending, live }
 
 class IncidentModel extends Equatable {
   final String id;
+  final int dbId;
   final String title;
   final String location;
   final String sector;
@@ -19,6 +20,7 @@ class IncidentModel extends Equatable {
 
   const IncidentModel({
     required this.id,
+    this.dbId = 0,
     required this.title,
     required this.location,
     required this.sector,
@@ -32,8 +34,25 @@ class IncidentModel extends Equatable {
     this.userId,
   });
 
+  IncidentModel copyWithStatus(IncidentStatus newStatus) => IncidentModel(
+        id: id,
+        dbId: dbId,
+        title: title,
+        location: location,
+        sector: sector,
+        priority: priority,
+        status: newStatus,
+        timeAgo: timeAgo,
+        imageUrl: imageUrl,
+        aiVerified: aiVerified,
+        lat: lat,
+        lng: lng,
+        userId: userId,
+      );
+
   factory IncidentModel.fromJson(Map<String, dynamic> json) {
     return IncidentModel(
+      dbId: (json['id'] as num?)?.toInt() ?? 0,
       id: json['eventId'] as String? ?? json['id'].toString(),
       title: json['eventName'] as String? ?? '',
       location: json['location'] as String? ?? '',
@@ -168,5 +187,5 @@ class IncidentModel extends Equatable {
   ];
 
   @override
-  List<Object?> get props => [id, userId];
+  List<Object?> get props => [id, dbId, userId, status];
 }

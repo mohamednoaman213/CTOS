@@ -308,16 +308,19 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _submitReport,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                    ),
-                    child: const Text(
-                      'SUBMIT ANONYMOUSLY',
-                      style: TextStyle(
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w700,
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _submitReport,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                      ),
+                      child: const Text(
+                        'SUBMIT ANONYMOUSLY',
+                        style: TextStyle(
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),

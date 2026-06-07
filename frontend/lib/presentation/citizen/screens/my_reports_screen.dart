@@ -110,9 +110,8 @@ class _ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOngoing = incident.status == IncidentStatus.ongoing;
-    final statusColor = isOngoing ? AppColors.high : AppColors.medium;
-    final statusLabel = isOngoing ? 'Ongoing' : 'Resolved';
+    final statusLabel = _statusLabel(incident.status);
+    final statusColor = _statusColor(incident.status);
 
     return Container(
       decoration: BoxDecoration(
@@ -202,5 +201,23 @@ class _ReportCard extends StatelessWidget {
     if (title.toLowerCase().contains('fire')) return Icons.local_fire_department;
     if (title.toLowerCase().contains('car')) return Icons.car_crash;
     return Icons.warning_amber;
+  }
+
+  String _statusLabel(IncidentStatus status) {
+    switch (status) {
+      case IncidentStatus.ongoing: return 'Officer Assigned';
+      case IncidentStatus.resolved: return 'Resolved';
+      case IncidentStatus.pending: return 'Under Processing';
+      case IncidentStatus.live: return 'Live';
+    }
+  }
+
+  Color _statusColor(IncidentStatus status) {
+    switch (status) {
+      case IncidentStatus.ongoing: return AppColors.high;
+      case IncidentStatus.resolved: return AppColors.medium;
+      case IncidentStatus.pending: return AppColors.primary;
+      case IncidentStatus.live: return AppColors.critical;
+    }
   }
 }

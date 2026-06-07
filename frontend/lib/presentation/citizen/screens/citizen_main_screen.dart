@@ -64,7 +64,7 @@ class _CitizenMainView extends StatelessWidget {
                 )
               : null,
           floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
+              FloatingActionButtonLocation.centerFloat,
           bottomNavigationBar: _CitizenBottomNav(currentTab: state.currentTab),
         );
       },
@@ -104,7 +104,6 @@ class _CitizenBottomNav extends StatelessWidget {
                     .read<CitizenBloc>()
                     .add(const NavigateToTabEvent(1)),
               ),
-              const SizedBox(width: 60), // FAB gap
               _NavItem(
                 icon: Icons.notifications_outlined,
                 label: 'Notifications',

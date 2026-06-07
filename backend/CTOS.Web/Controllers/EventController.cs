@@ -69,6 +69,15 @@ namespace CTOS.Web.Controllers
             return Ok(new { UpdatedId = result });
         }
 
+        // ── PATCH api/event/{id}/status ─────────────
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusDto dto)
+        {
+            var result = await eventService.UpdateStatusAsync(id, dto.Status);
+            if (result == 0) return NotFound($"Event with Id:{id} not found.");
+            return Ok(new { UpdatedId = result });
+        }
+
         // ── DELETE api/event/{id} ────────────────────
         [HttpDelete("Event/{id}")]
         public async Task<IActionResult> DeleteEvent(int id)
@@ -79,7 +88,12 @@ namespace CTOS.Web.Controllers
         }
     }
 
-    // ── DTO ──────────────────────────────────────────
+    // ── DTOs ─────────────────────────────────────────
+    public class UpdateStatusDto
+    {
+        public string Status { get; set; } = null!;
+    }
+
     public class CreateEventRequest
     {
         public string EventName { get; set; } = null!;

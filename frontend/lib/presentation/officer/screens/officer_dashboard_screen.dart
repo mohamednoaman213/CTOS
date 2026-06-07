@@ -16,10 +16,28 @@ class OfficerDashboardScreen extends StatefulWidget {
 }
 
 class _OfficerDashboardScreenState extends State<OfficerDashboardScreen> {
+  bool _sortHighToLow = true;
+
   @override
   void initState() {
     super.initState();
     context.read<OfficerBloc>().add(LoadOfficerDataEvent());
+  }
+
+  List<IncidentModel> _sorted(List<IncidentModel> incidents) {
+    final order = [
+      IncidentPriority.critical,
+      IncidentPriority.high,
+      IncidentPriority.medium,
+      IncidentPriority.low,
+    ];
+    final copy = [...incidents];
+    copy.sort((a, b) {
+      final ai = order.indexOf(a.priority);
+      final bi = order.indexOf(b.priority);
+      return _sortHighToLow ? ai.compareTo(bi) : bi.compareTo(ai);
+    });
+    return copy;
   }
 
   @override
@@ -62,13 +80,23 @@ class _OfficerDashboardScreenState extends State<OfficerDashboardScreen> {
                           style: AppTextStyles.headlineSmall),
                     ],
                   ),
-                  Row(
-                    children: [
-                      const Text('SORT BY: ', style: AppTextStyles.bodySmall),
-                      const Text('Highest Priority',
-                          style: TextStyle(
-                              color: AppColors.textPrimary, fontSize: 12)),
-                    ],
+                  GestureDetector(
+                    onTap: () => setState(() => _sortHighToLow = !_sortHighToLow),
+                    child: Row(
+                      children: [
+                        const Text('SORT BY: ', style: AppTextStyles.bodySmall),
+                        Text(
+                          _sortHighToLow ? 'High → Low' : 'Low → High',
+                          style: const TextStyle(
+                              color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _sortHighToLow ? Icons.arrow_downward : Icons.arrow_upward,
+                          color: AppColors.primary, size: 14,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -98,7 +126,7 @@ class _OfficerDashboardScreenState extends State<OfficerDashboardScreen> {
                         itemCount: state.incidents.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (ctx, i) =>
-                            _IncidentCard(incident: state.incidents[i]),
+                            _IncidentCard(incident: _sorted(state.incidents)[i]),
                       ),
               ),
             ],
@@ -249,34 +277,81 @@ class _IncidentCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      context
-                          .read<OfficerBloc>()
-                          .add(AssignIncidentEvent(incident.id));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Report #${incident.id} assigned to officer'),
-                          backgroundColor: AppColors.primary,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.assignment_ind_outlined, size: 16),
-                    label: const Text('ASSIGN TO OFFICER',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                if (incident.status == IncidentStatus.resolved)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.medium.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text('RESOLVED',
+                          style: TextStyle(
+                              color: AppColors.medium,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1)),
+                    ),
+                  )
+                else if (incident.status == IncidentStatus.ongoing)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        context.read<OfficerBloc>().add(
+                            UpdateIncidentStatusEvent(
+                                dbId: incident.dbId,
+                                newStatus: 'Resolved'));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Report #${incident.id} marked as resolved'),
+                            backgroundColor: AppColors.medium,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.check_circle_outline, size: 16),
+                      label: const Text('ISSUE RESOLVED',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.medium,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        context.read<OfficerBloc>().add(
+                            UpdateIncidentStatusEvent(
+                                dbId: incident.dbId,
+                                newStatus: 'NotResolved'));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Report #${incident.id} assigned to officer'),
+                            backgroundColor: AppColors.primary,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.assignment_ind_outlined, size: 16),
+                      label: const Text('ASSIGN TO OFFICER',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

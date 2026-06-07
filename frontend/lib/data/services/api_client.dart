@@ -20,6 +20,11 @@ class ApiClient {
           .put(Uri.parse('$_baseUrl$path'), headers: _jsonHeaders, body: body)
           .timeout(const Duration(seconds: 30)));
 
+  static Future<http.Response> patch(String path, String body) =>
+      _withRetry(() => http
+          .patch(Uri.parse('$_baseUrl$path'), headers: _jsonHeaders, body: body)
+          .timeout(const Duration(seconds: 30)));
+
   static const Map<String, String> _jsonHeaders = {
     'Content-Type': 'application/json',
   };

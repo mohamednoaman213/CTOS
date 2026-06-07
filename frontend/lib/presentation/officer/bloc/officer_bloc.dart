@@ -15,6 +15,7 @@ class OfficerBloc extends Bloc<OfficerEvent, OfficerState> {
     on<RespondToIncidentEvent>(_onRespond);
     on<ShowAlertEvent>(_onShowAlert);
     on<AssignIncidentEvent>(_onAssign);
+    on<UpdateIncidentStatusEvent>(_onUpdateStatus);
   }
 
   Future<void> _onLoad(
@@ -86,5 +87,30 @@ class OfficerBloc extends Bloc<OfficerEvent, OfficerState> {
     final updated =
         state.incidents.where((r) => r.id != event.incidentId).toList();
     emit(state.copyWith(incidents: updated));
+  }
+
+  Future<void> _onUpdateStatus(
+      UpdateIncidentStatusEvent event, Emitter<OfficerState> emit) async {
+    try {
+      final response = await ApiClient.patch(
+        '/api/event/${event.dbId}/status',
+        '{"status":"${event.newStatus}"}',
+      );
+      if (response.statusCode == 200) {
+        final statusEnum = _toEnum(event.newStatus);
+        final updated = state.incidents.map((r) {
+          return r.dbId == event.dbId ? r.copyWithStatus(statusEnum) : r;
+        }).toList();
+        emit(state.copyWith(incidents: updated));
+      }
+    } catch (_) {}
+  }
+
+  static IncidentStatus _toEnum(String status) {
+    switch (status) {
+      case 'NotResolved': return IncidentStatus.ongoing;
+      case 'Resolved': return IncidentStatus.resolved;
+      default: return IncidentStatus.pending;
+    }
   }
 }

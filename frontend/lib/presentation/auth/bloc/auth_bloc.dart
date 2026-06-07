@@ -88,7 +88,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final body = jsonEncode({
         'email': event.email,
-        'passwordHash': event.password,
+        'password': event.password,
       });
 
       final response = await _postWithRetry('$_baseUrl/api/User/Login', body);
