@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+
+runs/
+temp/
+
+dataset/
+weapons_dataset/
+
+venv/
+.env
+
+*.pt
+!models/
+!models/*.pt
+
+phoptosTest/
