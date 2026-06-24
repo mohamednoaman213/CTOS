@@ -6,7 +6,7 @@ namespace CTOS.Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UnitController(UnitService unitService) : ControllerBase
+    public class UnitController(UnitService unitService, NotificationService notificationService, UserService userService) : ControllerBase
     {
         // GET api/unit/dispatcher/{dispatcherId}
         [HttpGet("Dispatcher/{dispatcherId}")]
@@ -103,6 +103,29 @@ namespace CTOS.Web.Controllers
             return Ok("Unit deleted.");
         }
 
+        // POST api/unit/{unitId}/request-backup
+        [HttpPost("{unitId}/RequestBackup")]
+        public async Task<IActionResult> RequestBackup(int unitId, [FromBody] RequestBackupDto dto)
+        {
+            var unit = await unitService.GetUnitByIdAsync(unitId);
+            if (unit is null) return NotFound($"Unit with Id:{unitId} not found.");
+
+            var officials = await userService.GetAllOfficialsAsync();
+            var recipients = officials
+                .Where(o => !o.IsDeleted && o.Id != dto.RequestingOfficerId)
+                .Select(o => (o.Id, o.DeviceToken))
+                .ToList();
+
+            await notificationService.SendToMultipleAsync(
+                recipients,
+                "Backup Requested",
+                $"{unit.UnitName} is requesting backup!",
+                null
+            );
+
+            return Ok("Backup request sent.");
+        }
+
 
         [HttpGet("Available")]
         public async Task<IActionResult> GetAvailableUnits()
@@ -125,6 +148,11 @@ namespace CTOS.Web.Controllers
             }));
         }
 
+    }
+
+    public class RequestBackupDto
+    {
+        public int RequestingOfficerId { get; set; }
     }
     }
 

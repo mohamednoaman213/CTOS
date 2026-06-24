@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_colors.dart';
@@ -228,33 +229,56 @@ class _IncidentCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Image
-          Container(
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: Icon(
-                    _getIcon(incident.title),
-                    size: 40,
-                    color: AppColors.textMuted.withValues(alpha: 0.4),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: SizedBox(
+              height: 120,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  incident.imageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: incident.imageUrl!,
+                          width: double.infinity,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          placeholder: (_, _) => Container(
+                            color: AppColors.surfaceLight,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primary, strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (_, _, _) => Container(
+                            color: AppColors.surfaceLight,
+                            child: Center(
+                              child: Icon(_getIcon(incident.title),
+                                  size: 40,
+                                  color: AppColors.textMuted.withValues(alpha: 0.4)),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: AppColors.surfaceLight,
+                          child: Center(
+                            child: Icon(_getIcon(incident.title),
+                                size: 40,
+                                color: AppColors.textMuted.withValues(alpha: 0.4)),
+                          ),
+                        ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: PriorityBadge.fromPriority(incident.priority),
                   ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: PriorityBadge.fromPriority(incident.priority),
-                ),
-                Positioned(
-                  bottom: 10,
-                  right: 10,
-                  child: Text('ID: ${incident.id}',
-                      style: AppTextStyles.labelMedium),
-                ),
-              ],
+                  Positioned(
+                    bottom: 10,
+                    right: 10,
+                    child: Text('ID: ${incident.id}',
+                        style: AppTextStyles.labelMedium),
+                  ),
+                ],
+              ),
             ),
           ),
           Padding(

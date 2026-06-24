@@ -13,6 +13,9 @@ namespace CTOS.Web.Services
         // ────────────────────────────────────────────
         public async Task<int> RegisterCitizenAsync(Citizen citizen)
         {
+            if (await userRepo.ExistsByNationalIdAsync(citizen.NationalId))
+                throw new Exception("This National ID is already registered.");
+
             citizen.Id = 0;
             citizen.UserId = Guid.NewGuid().ToString();
             citizen.PasswordHash = HashPassword(citizen.PasswordHash);
@@ -32,6 +35,9 @@ namespace CTOS.Web.Services
         // ────────────────────────────────────────────
         public async Task<int> RegisterOfficialAsync(Official official)
         {
+            if (await userRepo.ExistsByNationalIdAsync(official.NationalId))
+                throw new Exception("This National ID is already registered.");
+
             official.Id = 0;
             official.UserId = Guid.NewGuid().ToString();
             official.PasswordHash = HashPassword(official.PasswordHash);
@@ -121,6 +127,12 @@ namespace CTOS.Web.Services
             await userRepo.SaveChangesAsync();
             return official.Id;
         }
+
+        // ────────────────────────────────────────────
+        //  Get All Officials
+        // ────────────────────────────────────────────
+        public async Task<IEnumerable<Official>> GetAllOfficialsAsync()
+            => await userRepo.GetAllOfficialsAsync();
 
         // ────────────────────────────────────────────
         //  Delete Account (Soft Delete)

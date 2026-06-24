@@ -12,7 +12,7 @@ namespace CTOS.Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EventController(EventService eventService, Cloudinaryservice cloudinaryService, AiService aiService) : ControllerBase
+    public class EventController(EventService eventService, Cloudinaryservice cloudinaryService, AiService aiService, NotificationService notificationService, UserService userService) : ControllerBase
     {
         // ── GET api/event/get-all ────────────────────
         [HttpGet("Get-All")]
@@ -60,16 +60,33 @@ namespace CTOS.Web.Controllers
                 EventName = request.EventName,
                 Description = request.Description,
                 Location = request.Location,
-                Category = request.Category,
+                Category = aiResult.Labels.Count > 0
+                    ? string.Join(", ", aiResult.Labels)
+                    : request.Category,
                 UserId = request.UserId,
                 ImageUrl = imageUrl,
                 Status = "UnderProcessing",
                 Priority = aiResult.Priority,
+                AiConfidence = aiResult.AverageConfidence,
                 CreatedAt = DateTime.UtcNow
             };
 
             // 4. Save to DB
             var id = await eventService.CreateEventAsync(newEvent);
+
+            // 5. Notify all officers
+            var officials = await userService.GetAllOfficialsAsync();
+            var recipients = officials
+                .Where(o => !o.IsDeleted)
+                .Select(o => (o.Id, o.DeviceToken))
+                .ToList();
+            await notificationService.SendToMultipleAsync(
+                recipients,
+                "New Report",
+                $"New {aiResult.Priority} report: {newEvent.EventName} at {newEvent.Location}",
+                id
+            );
+
             return Ok(new { Id = id, ImageUrl = imageUrl });
         }
 

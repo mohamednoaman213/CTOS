@@ -32,7 +32,6 @@ namespace CTOS.Web
             builder.Services.AddScoped<NotificationRepo>();
             builder.Services.AddScoped<NotificationService>();
             builder.Services.AddHttpClient<AiService>();
-            builder.Services.AddScoped<AiService>();
             #endregion
 
             builder.Services.AddDbContext<CtosDbContext>(options => {

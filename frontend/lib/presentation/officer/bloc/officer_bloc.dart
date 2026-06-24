@@ -104,6 +104,8 @@ class OfficerBloc extends Bloc<OfficerEvent, OfficerState> {
         final updated = state.incidents.map((r) {
           return r.dbId == event.dbId ? r.copyWithStatus(statusEnum) : r;
         }).toList();
+        AppSession.instance.resolvedCount =
+            updated.where((r) => r.status == IncidentStatus.resolved).length;
         emit(state.copyWith(incidents: updated));
       }
     } catch (_) {}

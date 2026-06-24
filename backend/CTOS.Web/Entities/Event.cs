@@ -26,6 +26,9 @@ namespace CTOS.Web.Entities {
         // High / Mid / Low (AI decides)
         public string Priority { get; set; } = null!;
 
+        // AI confidence percentage (0-100)
+        public double AiConfidence { get; set; } = 0;
+
         // UnderProcessing / Resolved / NotResolved
         public string Status { get; set; } = "UnderProcessing";
         public string? ImageUrl { get; set; }

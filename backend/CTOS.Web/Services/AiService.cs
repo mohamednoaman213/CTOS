@@ -9,6 +9,7 @@ namespace CTOS.Web.Services
         public string RecommendedAction { get; set; } = "No action required";
         public List<string> Labels { get; set; } = [];
         public string? AnnotatedImage { get; set; }
+        public double AverageConfidence { get; set; } = 0;
     }
 
     public class AiService(HttpClient httpClient, IConfiguration configuration)
@@ -49,10 +50,18 @@ namespace CTOS.Web.Services
                 var recommendedAction = root.GetProperty("recommended_action").GetString() ?? "No action required";
 
                 var labels = new List<string>();
+                var confidences = new List<double>();
                 if (root.TryGetProperty("detections", out var detectionsEl))
                     foreach (var d in detectionsEl.EnumerateArray())
+                    {
                         if (d.TryGetProperty("label", out var lbl))
                             labels.Add(lbl.GetString() ?? "");
+                        if (d.TryGetProperty("confidence", out var conf))
+                            confidences.Add(conf.GetDouble() * 100);
+                    }
+                var avgConfidence = confidences.Count > 0
+                    ? Math.Round(confidences.Average(), 1)
+                    : 0;
 
                 string? annotatedImage = null;
                 if (root.TryGetProperty("annotated_image", out var imgEl))
@@ -69,7 +78,8 @@ namespace CTOS.Web.Services
                     ThreatLevel = threatLevel,
                     RecommendedAction = recommendedAction,
                     Labels = labels,
-                    AnnotatedImage = annotatedImage
+                    AnnotatedImage = annotatedImage,
+                    AverageConfidence = avgConfidence
                 };
             }
             catch (Exception ex)

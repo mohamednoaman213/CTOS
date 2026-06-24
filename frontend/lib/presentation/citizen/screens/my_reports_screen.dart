@@ -194,13 +194,19 @@ class _ReportCard extends StatelessWidget {
                 Text(incident.title, style: AppTextStyles.headlineSmall),
                 const SizedBox(height: 4),
                 Text(incident.timeAgo, style: AppTextStyles.bodySmall),
-                const SizedBox(height: 2),
-                Row(
+                const SizedBox(height: 10),
+                // AI analysis row
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
-                    const Icon(Icons.check_circle,
-                        color: AppColors.medium, size: 14),
-                    const SizedBox(width: 4),
-                    Text(incident.sector, style: AppTextStyles.bodySmall),
+                    // Category chips from AI labels
+                    if (incident.sector.isNotEmpty && incident.sector != 'General')
+                      ..._categoryChips(incident.sector),
+                    // Priority badge
+                    _priorityBadge(incident.priority),
+                    // AI validity
+                    _aiBadge(incident.aiVerified),
                   ],
                 ),
               ],
@@ -235,5 +241,69 @@ class _ReportCard extends StatelessWidget {
       case IncidentStatus.pending: return AppColors.primary;
       case IncidentStatus.live: return AppColors.critical;
     }
+  }
+
+  List<Widget> _categoryChips(String sector) {
+    return sector.split(',').map((label) {
+      final l = label.trim().toUpperCase();
+      final color = l.contains('FIRE') ? AppColors.critical
+          : (l.contains('PISTOL') || l.contains('KNIFE')) ? AppColors.high
+          : AppColors.primary;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Text(l,
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+      );
+    }).toList();
+  }
+
+  Widget _priorityBadge(IncidentPriority priority) {
+    final (label, color) = switch (priority) {
+      IncidentPriority.critical => ('CRITICAL', AppColors.critical),
+      IncidentPriority.high     => ('HIGH', AppColors.high),
+      IncidentPriority.medium   => ('MEDIUM', AppColors.medium),
+      IncidentPriority.low      => ('LOW', AppColors.textMuted),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.shield_outlined, color: color, size: 11),
+        const SizedBox(width: 3),
+        Text(label,
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+      ]),
+    );
+  }
+
+  Widget _aiBadge(bool valid) {
+    final color = valid ? AppColors.onlineGreen : AppColors.textMuted;
+    final label = valid ? 'THREAT DETECTED' : 'NO THREAT';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.smart_toy_outlined, color: color, size: 11),
+        const SizedBox(width: 3),
+        Text(label,
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+      ]),
+    );
   }
 }

@@ -14,6 +14,7 @@ class IncidentModel extends Equatable {
   final String timeAgo;
   final String? imageUrl;
   final bool aiVerified;
+  final double aiConfidence;
   final double lat;
   final double lng;
   final int? userId;
@@ -29,6 +30,7 @@ class IncidentModel extends Equatable {
     required this.timeAgo,
     this.imageUrl,
     this.aiVerified = true,
+    this.aiConfidence = 0,
     this.lat = 31.2,
     this.lng = 29.9,
     this.userId,
@@ -45,6 +47,7 @@ class IncidentModel extends Equatable {
         timeAgo: timeAgo,
         imageUrl: imageUrl,
         aiVerified: aiVerified,
+        aiConfidence: aiConfidence,
         lat: lat,
         lng: lng,
         userId: userId,
@@ -61,7 +64,8 @@ class IncidentModel extends Equatable {
       status: _parseStatus(json['status'] as String?),
       timeAgo: _toTimeAgo(json['createdAt'] as String?),
       imageUrl: json['imageUrl'] as String?,
-      aiVerified: false,
+      aiVerified: _parsePriority(json['priority'] as String?) != IncidentPriority.low,
+      aiConfidence: (json['aiConfidence'] as num?)?.toDouble() ?? 0,
       lat: 31.2,
       lng: 29.9,
       userId: (json['userId'] as num?)?.toInt(),

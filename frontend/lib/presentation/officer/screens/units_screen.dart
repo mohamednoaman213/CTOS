@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/session/app_session.dart';
 import '../../../data/models/unit_model.dart';
+import '../../../data/services/api_client.dart';
 import '../bloc/officer_bloc.dart';
 import '../bloc/officer_state.dart';
 
@@ -45,6 +48,37 @@ class _UnitTile extends StatefulWidget {
 
 class _UnitTileState extends State<_UnitTile> {
   bool _expanded = false;
+  bool _requestingBackup = false;
+
+  Future<void> _requestBackup() async {
+    setState(() => _requestingBackup = true);
+    try {
+      final body = jsonEncode({'requestingOfficerId': AppSession.instance.userId});
+      await ApiClient.post('/api/unit/${widget.unit.id}/RequestBackup', body);
+      if (mounted) {
+        setState(() => _expanded = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backup requested for ${widget.unit.name}'),
+            backgroundColor: AppColors.high,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send backup request'),
+            backgroundColor: AppColors.critical,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _requestingBackup = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,18 +164,15 @@ class _UnitTileState extends State<_UnitTile> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() => _expanded = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Backup requested for ${widget.unit.name}'),
-                        backgroundColor: AppColors.high,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.campaign_outlined, size: 16),
+                  onPressed: _requestingBackup ? null : _requestBackup,
+                  icon: _requestingBackup
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(Icons.campaign_outlined, size: 16),
                   label: const Text('REQUEST BACKUP',
                       style: TextStyle(
                           fontSize: 12,

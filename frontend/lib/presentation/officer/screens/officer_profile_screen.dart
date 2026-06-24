@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/routes/app_router.dart';
 import '../../../core/session/app_session.dart';
+import '../../../data/models/incident_model.dart';
 import '../../../data/models/user_model.dart';
+import '../bloc/officer_bloc.dart';
+import '../bloc/officer_state.dart';
 
 class OfficerProfileScreen extends StatefulWidget {
   const OfficerProfileScreen({super.key});
@@ -25,9 +29,14 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = UserModel.fromSession();
-    final resolvedCount = AppSession.instance.resolvedCount;
 
-    return Scaffold(
+    return BlocBuilder<OfficerBloc, OfficerState>(
+      builder: (context, state) {
+        final resolvedCount = state.incidents
+            .where((r) => r.status == IncidentStatus.resolved)
+            .length;
+
+        return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -278,6 +287,8 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
           ),
         ),
       ),
+        );
+      },
     );
   }
 }

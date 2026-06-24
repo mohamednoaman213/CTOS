@@ -14,6 +14,10 @@ namespace CTOS.Web.Repositroies
             => await context.Set<User>()
                             .FirstOrDefaultAsync(u => u.Email == email);
 
+        public async Task<bool> ExistsByNationalIdAsync(string nationalId)
+            => await context.Set<User>()
+                            .AnyAsync(u => u.NationalId == nationalId && !u.IsDeleted);
+
         public async Task<IEnumerable<User>> GetAllAsync()
             => await context.Set<User>().ToListAsync();
 
