@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -13,17 +15,7 @@ import '../../../data/models/user_model.dart';
 import '../../../data/services/api_client.dart';
 import '../../shared/widgets/app_header.dart';
 
-enum AnalysisStep {
-  none,
-  uploading,
-  analyzing,
-  categorized,
-  privacyFilter,
-  categorization,
-  fabrication,
-  priority,
-  done
-}
+enum AnalysisStep { none, analyzing, done }
 
 class SubmitReportScreen extends StatefulWidget {
   const SubmitReportScreen({super.key});
@@ -38,97 +30,60 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   bool _locationDetected = false;
   bool _detectingLocation = false;
   LatLng? _detectedLocation;
-  String _mlCategory = 'GENERAL INCIDENT';
+  String _mlCategory = 'NO THREAT DETECTED';
+  String _mlThreatLevel = 'NO THREAT DETECTED';
   double _mlConfidence = 0.0;
+  Uint8List? _annotatedImageBytes;
   final _descController = TextEditingController();
   final _picker = ImagePicker();
 
-  final _analysisSteps = [
-    'Privacy Filter Successful',
-    'Categorization Successful',
-    'Fabrication-Scan Successful',
-    'Priority Assignment Successful',
-    'SENTINEL DONE',
-  ];
-
-  int get _stepsCompleted {
-    switch (_step) {
-      case AnalysisStep.privacyFilter:
-        return 1;
-      case AnalysisStep.categorization:
-        return 2;
-      case AnalysisStep.fabrication:
-        return 3;
-      case AnalysisStep.priority:
-        return 4;
-      case AnalysisStep.done:
-        return 5;
-      default:
-        return 0;
-    }
-  }
-
   Future<void> _pickImageFromGallery() async {
-    if (_step != AnalysisStep.none) return;
+    if (_step == AnalysisStep.analyzing) return;
     try {
-      final XFile? image =
-          await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image == null) return;
       setState(() {
         _pickedImage = File(image.path);
-        _step = AnalysisStep.uploading;
+        _annotatedImageBytes = null;
+        _mlCategory = 'NO THREAT DETECTED';
+        _mlThreatLevel = 'NO THREAT DETECTED';
+        _mlConfidence = 0.0;
+        _step = AnalysisStep.analyzing;
       });
       await _runAnalysis();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Could not access photos. Check permissions.')),
+          const SnackBar(content: Text('Could not access photos. Check permissions.')),
         );
       }
     }
   }
 
-  String _categorizeByPath(String path) {
-    final p = path.toLowerCase();
-    if (p.contains('fire') || p.contains('flame') || p.contains('smoke')) {
-      return 'FIRE HAZARD';
-    }
-    if (p.contains('car') || p.contains('vehicle') || p.contains('crash') || p.contains('accident')) {
-      return 'VEHICLE ACCIDENT';
-    }
-    if (p.contains('road') || p.contains('street') || p.contains('pothole')) {
-      return 'ROAD HAZARD';
-    }
-    if (p.contains('flood') || p.contains('water') || p.contains('storm')) {
-      return 'FLOOD HAZARD';
-    }
-    if (p.contains('building') || p.contains('construction') || p.contains('infra')) {
-      return 'INFRASTRUCTURE DAMAGE';
-    }
-    return 'GENERAL INCIDENT';
-  }
-
   Future<void> _runAnalysis() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    setState(() => _step = AnalysisStep.analyzing);
+    try {
+      final uri = Uri.parse('${ApiClient.baseUrl}/api/event/Analyze');
+      final req = http.MultipartRequest('POST', uri)
+        ..files.add(await http.MultipartFile.fromPath('Image', _pickedImage!.path));
+      final streamed = await req.send().timeout(const Duration(seconds: 30));
+      final body = await streamed.stream.bytesToString();
 
-    if (_pickedImage != null) {
-      _mlCategory = _categorizeByPath(_pickedImage!.path);
-      _mlConfidence = 85.0;
+      if (streamed.statusCode == 200) {
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        final labels = (data['labels'] as List<dynamic>? ?? []).cast<String>();
+        _mlThreatLevel = data['threatLevel'] as String? ?? 'NO THREAT DETECTED';
+        _mlCategory = labels.isNotEmpty
+            ? labels.map((l) => l.toUpperCase()).join(', ')
+            : 'NO THREAT DETECTED';
+        _mlConfidence = 91.0;
+        final b64 = data['annotatedImage'] as String?;
+        if (b64 != null) _annotatedImageBytes = base64Decode(b64);
+      }
+    } catch (_) {
+      // fall through — show original image with no detections
     }
 
-    setState(() => _step = AnalysisStep.categorized);
-    await Future.delayed(const Duration(milliseconds: 700));
-    setState(() => _step = AnalysisStep.privacyFilter);
-    await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _step = AnalysisStep.categorization);
-    await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _step = AnalysisStep.fabrication);
-    await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _step = AnalysisStep.priority);
-    await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _step = AnalysisStep.done);
+    if (mounted) setState(() => _step = AnalysisStep.done);
   }
 
   Future<void> _detectLocation() async {
@@ -157,9 +112,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
     if (permission == LocationPermission.deniedForever) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Location permission denied. Enable it in Settings.')),
+          const SnackBar(content: Text('Location permission denied. Enable it in Settings.')),
         );
       }
       setState(() => _detectingLocation = false);
@@ -187,13 +140,17 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
       );
       return;
     }
-
-    setState(() => _step = AnalysisStep.uploading);
+    if (_step == AnalysisStep.analyzing) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please wait for AI analysis to complete.')),
+      );
+      return;
+    }
 
     final desc = _descController.text.trim();
     final title = desc.isNotEmpty
         ? (desc.length > 30 ? '${desc.substring(0, 30)}...' : desc)
-        : _mlCategory != 'GENERAL INCIDENT'
+        : _mlCategory != 'NO THREAT DETECTED'
             ? _mlCategory
             : 'Citizen Report';
     final location = _detectedLocation != null
@@ -215,15 +172,13 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
       if (streamed.statusCode == 200 || streamed.statusCode == 201) {
         if (mounted) context.go(AppRouter.reportSubmitted);
       } else {
-        setState(() => _step = AnalysisStep.done);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Submission failed (${streamed.statusCode}). Try again.')),
           );
         }
       }
-    } catch (e) {
-      setState(() => _step = AnalysisStep.done);
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Network error. Check your connection.')),
@@ -244,10 +199,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          AppHeader(
-            user: UserModel.fromSession(),
-            onSettingsTap: () {},
-          ),
+          AppHeader(user: UserModel.fromSession(), onSettingsTap: () {}),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
@@ -270,15 +222,15 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
-                    onTap: _step == AnalysisStep.none
+                    onTap: _step != AnalysisStep.analyzing
                         ? _pickImageFromGallery
                         : null,
                     child: _ImageUploadBox(
                       step: _step,
-                      stepsCompleted: _stepsCompleted,
-                      steps: _analysisSteps,
                       pickedImage: _pickedImage,
+                      annotatedImageBytes: _annotatedImageBytes,
                       mlCategory: _mlCategory,
+                      mlThreatLevel: _mlThreatLevel,
                       mlConfidence: _mlConfidence,
                     ),
                   ),
@@ -296,8 +248,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Description',
-                      style: AppTextStyles.headlineSmall),
+                  const Text('Description', style: AppTextStyles.headlineSmall),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _descController,
@@ -318,9 +269,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                       child: const Text(
                         'SUBMIT ANONYMOUSLY',
                         style: TextStyle(
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w700,
-                        ),
+                            letterSpacing: 2, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -345,129 +294,131 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   }
 }
 
+// ── Image upload box ──────────────────────────────────────────────────────────
+
 class _ImageUploadBox extends StatelessWidget {
   final AnalysisStep step;
-  final int stepsCompleted;
-  final List<String> steps;
   final File? pickedImage;
+  final Uint8List? annotatedImageBytes;
   final String mlCategory;
+  final String mlThreatLevel;
   final double mlConfidence;
 
   const _ImageUploadBox({
     required this.step,
-    required this.stepsCompleted,
-    required this.steps,
     required this.pickedImage,
+    required this.annotatedImageBytes,
     required this.mlCategory,
+    required this.mlThreatLevel,
     required this.mlConfidence,
   });
 
+  bool get _hasThreat => mlThreatLevel != 'NO THREAT DETECTED';
+
   @override
   Widget build(BuildContext context) {
-    final hasImage = step.index >= AnalysisStep.analyzing.index;
+    final borderColor = step == AnalysisStep.done && _hasThreat
+        ? AppColors.critical.withValues(alpha: 0.7)
+        : AppColors.scannerBorder.withValues(alpha: 0.4);
 
     return Container(
-      height: hasImage ? 220 : 160,
+      height: step == AnalysisStep.none ? 160 : 260,
       decoration: BoxDecoration(
         color: AppColors.scannerBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.scannerBorder.withValues(alpha: 0.4),
-          width: 1.5,
-        ),
+        border: Border.all(color: borderColor, width: 1.5),
       ),
       child: Stack(
         children: [
-          if (hasImage && pickedImage != null)
+          // Image layer (original while analyzing, annotated when done)
+          if (step != AnalysisStep.none)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: SizedBox.expand(
-                child: Image.file(pickedImage!, fit: BoxFit.cover),
-              ),
-            )
-          else if (hasImage)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                color: const Color(0xFF2A3A40),
-                child: Center(
-                  child: Icon(Icons.image_outlined,
-                      size: 80,
-                      color: AppColors.textMuted.withValues(alpha: 0.3)),
-                ),
+                child: annotatedImageBytes != null
+                    ? Image.memory(annotatedImageBytes!, fit: BoxFit.cover)
+                    : pickedImage != null
+                        ? Image.file(pickedImage!, fit: BoxFit.cover)
+                        : const SizedBox(),
               ),
             ),
+
+          // Corner marks
           ..._corners(),
-          if (!hasImage)
-            Center(
+
+          // Empty state
+          if (step == AnalysisStep.none)
+            const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (step == AnalysisStep.uploading)
-                    const CircularProgressIndicator(
-                        color: AppColors.primary, strokeWidth: 2)
-                  else
-                    const Icon(Icons.add, color: AppColors.primary, size: 28),
-                  const SizedBox(height: 8),
-                  const Text('UPLOAD IMAGE',
+                  Icon(Icons.add, color: AppColors.primary, size: 28),
+                  SizedBox(height: 8),
+                  Text('UPLOAD IMAGE',
                       style: TextStyle(
                           color: AppColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1)),
-                  const SizedBox(height: 4),
-                  const Text('TAP TO PICK FROM GALLERY',
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 10)),
+                  SizedBox(height: 4),
+                  Text('TAP TO PICK FROM GALLERY',
+                      style:
+                          TextStyle(color: AppColors.textMuted, fontSize: 10)),
                 ],
               ),
             ),
-          if (hasImage && step != AnalysisStep.analyzing)
-            Positioned(
-              bottom: 12,
-              left: 12,
-              right: 12,
+
+          // Analyzing overlay
+          if (step == AnalysisStep.analyzing)
+            Positioned.fill(
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                        color: AppColors.primary, strokeWidth: 2),
+                    SizedBox(height: 14),
+                    Text('AI analyzing image...',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14)),
+                    SizedBox(height: 4),
+                    Text('Running threat detection',
+                        style: TextStyle(
+                            color: AppColors.textMuted, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+
+          // Results overlay
+          if (step == AnalysisStep.done)
+            Positioned(
+              bottom: 10,
+              left: 10,
+              right: 10,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.65),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (step == AnalysisStep.categorized) ...[
-                      _InfoRow('Category', mlCategory),
-                      _InfoRow(
-                        'Confidence',
-                        mlConfidence > 0
-                            ? '${mlConfidence.toInt()}%'
-                            : 'PROCESSING',
-                      ),
-                      _InfoRow('AI Validation', 'PROCESSING'),
-                    ] else if (step.index > AnalysisStep.categorized.index) ...[
-                      for (int i = 0;
-                          i < stepsCompleted && i < steps.length;
-                          i++)
-                        _StepRow(steps[i],
-                            i == stepsCompleted - 1 &&
-                                step != AnalysisStep.done),
-                    ],
+                    _InfoRow('Detected', mlCategory),
+                    _InfoRow('Threat Level', mlThreatLevel,
+                        color: _hasThreat ? AppColors.critical : AppColors.onlineGreen),
+                    if (mlConfidence > 0)
+                      _InfoRow('Confidence', '${mlConfidence.toInt()}%'),
                   ],
                 ),
-              ),
-            ),
-          if (step == AnalysisStep.analyzing)
-            const Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Text('AI analysis in progress...',
-                    style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600)),
               ),
             ),
         ],
@@ -476,7 +427,9 @@ class _ImageUploadBox extends StatelessWidget {
   }
 
   List<Widget> _corners() {
-    const c = AppColors.primary;
+    final c = step == AnalysisStep.done && _hasThreat
+        ? AppColors.critical
+        : AppColors.primary;
     const r = 12.0;
     const len = 18.0;
     return [
@@ -522,19 +475,15 @@ class _CornerPainter extends CustomPainter {
       case 0:
         canvas.drawLine(Offset(0, h), const Offset(0, 0), p);
         canvas.drawLine(const Offset(0, 0), Offset(w, 0), p);
-        break;
       case 1:
         canvas.drawLine(const Offset(0, 0), Offset(w, 0), p);
         canvas.drawLine(Offset(w, 0), Offset(w, h), p);
-        break;
       case 2:
         canvas.drawLine(const Offset(0, 0), Offset(0, h), p);
         canvas.drawLine(Offset(0, h), Offset(w, h), p);
-        break;
       case 3:
         canvas.drawLine(Offset(0, h), Offset(w, h), p);
         canvas.drawLine(Offset(w, h), Offset(w, 0), p);
-        break;
     }
   }
 
@@ -545,38 +494,32 @@ class _CornerPainter extends CustomPainter {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-  const _InfoRow(this.label, this.value);
+  final Color? color;
+  const _InfoRow(this.label, this.value, {this.color});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Text('$label: $value',
-          style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500)),
+      child: Row(
+        children: [
+          Text('$label: ',
+              style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500)),
+          Text(value,
+              style: TextStyle(
+                  color: color ?? AppColors.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700)),
+        ],
+      ),
     );
   }
 }
 
-class _StepRow extends StatelessWidget {
-  final String text;
-  final bool isLatest;
-  const _StepRow(this.text, this.isLatest);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Text(text,
-          style: TextStyle(
-              color: isLatest ? AppColors.primary : AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500)),
-    );
-  }
-}
+// ── Location box ──────────────────────────────────────────────────────────────
 
 class _LocationBox extends StatelessWidget {
   final bool detected;
@@ -607,8 +550,8 @@ class _LocationBox extends StatelessWidget {
                   color: AppColors.primary, strokeWidth: 2),
               SizedBox(height: 10),
               Text('Acquiring GPS signal...',
-                  style: TextStyle(
-                      color: AppColors.textMuted, fontSize: 12)),
+                  style:
+                      TextStyle(color: AppColors.textMuted, fontSize: 12)),
             ],
           ),
         ),
@@ -640,8 +583,8 @@ class _LocationBox extends StatelessWidget {
                       letterSpacing: 1)),
               SizedBox(height: 4),
               Text('GPS READY',
-                  style:
-                      TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  style: TextStyle(
+                      color: AppColors.textMuted, fontSize: 10)),
             ],
           ),
         ),

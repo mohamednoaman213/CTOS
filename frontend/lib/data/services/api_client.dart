@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 
-const _baseUrl = 'http://ctos-api.runasp.net';
+const _baseUrl = 'http://localhost:5175';
 
 class ApiClient {
   static const String baseUrl = _baseUrl;

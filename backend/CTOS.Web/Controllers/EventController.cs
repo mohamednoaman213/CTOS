@@ -12,7 +12,7 @@ namespace CTOS.Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EventController(EventService eventService, Cloudinaryservice cloudinaryService) : ControllerBase
+    public class EventController(EventService eventService, Cloudinaryservice cloudinaryService, AiService aiService) : ControllerBase
     {
         // ── GET api/event/get-all ────────────────────
         [HttpGet("Get-All")]
@@ -40,7 +40,10 @@ namespace CTOS.Web.Controllers
             if (imageUrl is null)
                 return BadRequest("Image upload failed.");
 
-            // 2. Build the Event object
+            // 2. Run AI threat detection on the uploaded image
+            var priority = await aiService.DetectThreatAsync(request.Image);
+
+            // 3. Build the Event object
             var newEvent = new Event
             {
                 EventId = Guid.NewGuid().ToString(),
@@ -51,7 +54,7 @@ namespace CTOS.Web.Controllers
                 UserId = request.UserId,
                 ImageUrl = imageUrl,
                 Status = "UnderProcessing",
-                Priority = "Pending",
+                Priority = priority,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -78,6 +81,21 @@ namespace CTOS.Web.Controllers
             return Ok(new { UpdatedId = result });
         }
 
+        // ── POST api/event/analyze ───────────────────
+        [HttpPost("Analyze")]
+        public async Task<IActionResult> AnalyzeImage([FromForm] AnalyzeImageRequest request)
+        {
+            var result = await aiService.AnalyzeAsync(request.Image);
+            return Ok(new
+            {
+                threatLevel = result.ThreatLevel,
+                priority = result.Priority,
+                labels = result.Labels,
+                recommendedAction = result.RecommendedAction,
+                annotatedImage = result.AnnotatedImage
+            });
+        }
+
         // ── DELETE api/event/{id} ────────────────────
         [HttpDelete("Event/{id}")]
         public async Task<IActionResult> DeleteEvent(int id)
@@ -92,6 +110,11 @@ namespace CTOS.Web.Controllers
     public class UpdateStatusDto
     {
         public string Status { get; set; } = null!;
+    }
+
+    public class AnalyzeImageRequest
+    {
+        public IFormFile Image { get; set; } = null!;
     }
 
     public class CreateEventRequest
