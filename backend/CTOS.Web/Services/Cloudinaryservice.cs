@@ -38,6 +38,19 @@ namespace CTOS.Web.Services
             return result.SecureUrl?.ToString();
         }
 
+        public async Task<string?> UploadBytesAsync(byte[] bytes, string fileName, string folder = "ctos-events")
+        {
+            using var stream = new MemoryStream(bytes);
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(fileName, stream),
+                Folder = folder,
+                Transformation = new Transformation().Quality("auto").FetchFormat("auto")
+            };
+            var result = await _cloudinary.UploadAsync(uploadParams);
+            return result.SecureUrl?.ToString();
+        }
+
         // Delete image by public ID
         public async Task<bool> DeleteImageAsync(string publicId)
         {

@@ -46,6 +46,8 @@ class CitizenBloc extends Bloc<CitizenEvent, CitizenState> {
             .toList();
       }
 
+      AppSession.instance.reportCount = reports.length;
+
       emit(state.copyWith(
         reports: reports,
         notifications: notifications,

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_colors.dart';
@@ -132,12 +133,27 @@ class _ReportCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                Center(
-                  child: Icon(
-                    _getIcon(incident.title),
-                    size: 48,
-                    color: AppColors.textMuted,
-                  ),
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  child: incident.imageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: incident.imageUrl!,
+                          width: double.infinity,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => const Center(
+                            child: CircularProgressIndicator(
+                                color: AppColors.primary, strokeWidth: 2),
+                          ),
+                          errorWidget: (_, __, ___) => Center(
+                            child: Icon(_getIcon(incident.title),
+                                size: 48, color: AppColors.textMuted),
+                          ),
+                        )
+                      : Center(
+                          child: Icon(_getIcon(incident.title),
+                              size: 48, color: AppColors.textMuted),
+                        ),
                 ),
                 Positioned(
                   top: 10,

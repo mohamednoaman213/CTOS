@@ -39,6 +39,9 @@ class OfficerBloc extends Bloc<OfficerEvent, OfficerState> {
         incidents = list
             .map((e) => IncidentModel.fromJson(e as Map<String, dynamic>))
             .toList();
+        AppSession.instance.resolvedCount = incidents
+            .where((e) => e.status == IncidentStatus.resolved)
+            .length;
       }
 
       List<UnitModel> units = [];
@@ -69,7 +72,7 @@ class OfficerBloc extends Bloc<OfficerEvent, OfficerState> {
 
   void _onNavigate(NavigateToTabEvent event, Emitter<OfficerState> emit) {
     emit(state.copyWith(currentTab: event.index));
-    if (event.index == 1) add(LoadOfficerDataEvent());
+    if (event.index == 1 || event.index == 3) add(LoadOfficerDataEvent());
   }
 
   void _onRespond(RespondToIncidentEvent event, Emitter<OfficerState> emit) {

@@ -35,13 +35,23 @@ namespace CTOS.Web.Controllers
         [HttpPost("Create")]
         public async Task<IActionResult> CreateEvent([FromForm] CreateEventRequest request)
         {
-            // 1. Upload image to Cloudinary
-            var imageUrl = await cloudinaryService.UploadImageAsync(request.Image, "ctos-events");
+            // 1. Run AI analysis to get annotated image + priority
+            var aiResult = await aiService.AnalyzeAsync(request.Image);
+
+            // 2. Upload annotated image to Cloudinary (fallback to original if AI failed)
+            string? imageUrl;
+            if (!string.IsNullOrEmpty(aiResult.AnnotatedImage))
+            {
+                var annotatedBytes = Convert.FromBase64String(aiResult.AnnotatedImage);
+                imageUrl = await cloudinaryService.UploadBytesAsync(annotatedBytes, request.Image.FileName, "ctos-events");
+            }
+            else
+            {
+                imageUrl = await cloudinaryService.UploadImageAsync(request.Image, "ctos-events");
+            }
+
             if (imageUrl is null)
                 return BadRequest("Image upload failed.");
-
-            // 2. Run AI threat detection on the uploaded image
-            var priority = await aiService.DetectThreatAsync(request.Image);
 
             // 3. Build the Event object
             var newEvent = new Event
@@ -54,11 +64,11 @@ namespace CTOS.Web.Controllers
                 UserId = request.UserId,
                 ImageUrl = imageUrl,
                 Status = "UnderProcessing",
-                Priority = priority,
+                Priority = aiResult.Priority,
                 CreatedAt = DateTime.UtcNow
             };
 
-            // 3. Save to DB
+            // 4. Save to DB
             var id = await eventService.CreateEventAsync(newEvent);
             return Ok(new { Id = id, ImageUrl = imageUrl });
         }
