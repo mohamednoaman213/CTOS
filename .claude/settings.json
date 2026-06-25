@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:TEMP = \"D:\\\\Temp\"; $env:TMP = \"D:\\\\Temp\"; $env:Path += \";D:\\\\UNI\\\\Tools\\\\Flutter\\\\flutter\\\\bin\"; Set-Location \"d:\\\\UNI\\\\Senior Project Documentation\\\\CTOS\\\\frontend\"; flutter run -d emulator-5554 2>&1)",
+      "PowerShell($adb = \"C:\\\\Users\\\\Dell\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb uninstall com.ctos.ctos_app 2>&1; Copy-Item \"d:\\\\UNI\\\\Senior Project Documentation\\\\CTOS\\\\frontend\\\\build\\\\app\\\\outputs\\\\flutter-apk\\\\app-debug.apk\" \"D:\\\\Temp\\\\ctos.apk\" -Force; & $adb install -t \"D:\\\\Temp\\\\ctos.apk\" 2>&1)",
+      "PowerShell($adb = \"C:\\\\Users\\\\Dell\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb kill-server; Start-Sleep -Seconds 3; & $adb start-server; Start-Sleep -Seconds 2; & $adb devices)",
+      "PowerShell($adb = \"C:\\\\Users\\\\Dell\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; Copy-Item \"d:\\\\UNI\\\\Senior Project Documentation\\\\CTOS\\\\frontend\\\\build\\\\app\\\\outputs\\\\flutter-apk\\\\app-debug.apk\" \"D:\\\\Temp\\\\ctos.apk\" -Force; & $adb install --no-streaming \"D:\\\\Temp\\\\ctos.apk\" 2>&1)",
+      "PowerShell($env:Path += \";D:\\\\UNI\\\\Tools\\\\Flutter\\\\flutter\\\\bin\"; Set-Location \"d:\\\\UNI\\\\Senior Project Documentation\\\\CTOS\\\\frontend\"; flutter analyze lib/presentation/officer/screens/officer_profile_screen.dart lib/presentation/citizen/screens/citizen_profile_screen.dart lib/presentation/officer/bloc/officer_bloc.dart lib/core/session/app_session.dart 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:Path += \";D:\\\\UNI\\\\Tools\\\\Flutter\\\\flutter\\\\bin\"; Set-Location \"d:\\\\UNI\\\\Senior Project Documentation\\\\CTOS\\\\frontend\"; flutter analyze lib/presentation/officer/screens/officer_profile_screen.dart lib/presentation/citizen/screens/citizen_profile_screen.dart lib/presentation/officer/bloc/officer_bloc.dart lib/core/session/app_session.dart 2>&1 | Select-Object -Last 8)",
+      "Bash(New-Item -ItemType Directory -Force \"d:\\\\UNI\\\\Senior Project Documentation\\\\CTOS\\\\ai_model\\\\temp\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"d:\\\\UNI\\\\Senior Project Documentation\\\\CTOS\\\\ai_model\\\\temp\")",
+      "Bash(dotnet build *)"
+    ]
+  }
+}
